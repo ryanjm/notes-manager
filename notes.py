@@ -36,22 +36,38 @@ def loc():
     click.echo(get_notes_path())
 
 def count_files(basepath):
-    c = 0
+    c = {}
     for entry in os.listdir(basepath):
         if entry.startswith('.'):
             continue
         entrypath = path.join(basepath, entry)
         if path.isdir(entrypath):
-            c = c + count_files(entrypath)
+            for key,value in count_files(entrypath).items():
+                c.setdefault(key, 0)
+                c[key] += value
+
         elif path.isfile(entrypath):
-            c = c + 1
+            filename, file_extension = os.path.splitext(entrypath)
+            c.setdefault(file_extension, 0)
+            c[file_extension] += 1
     return c
 
 @cli.command()
-def count():
-    """Count of all notes"""
+@click.option('--total', default=False, is_flag=True, flag_value=True, help='Show only total count')
+def count(total):
+    """Count of all notes (skips dot files)"""
     basepath = get_source_path()
-    click.echo(count_files(basepath))
+    counts = count_files(basepath)
+    total_count = 0
+    for file_type, count in counts.items():
+        if total == False:
+            click.echo(f"{file_type}\t\t{count}")
+        total_count += count
+    if total:
+        click.echo(total_count)
+    else:
+        click.echo(f"Total:\t\t{total_count}")
+    
 
 @cli.command()
 def o():
