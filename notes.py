@@ -1,63 +1,76 @@
 import click
-import os.path
-import json
-from os import path
 
-@click.group()
+from notes_manager import count_files
+from editor_manager import open_editor
+from config_manager import source_path, init_config, current_dir
+from template_manager import new_journal
+
+
+@click.group(invoke_without_command=True)
 @click.version_option(message='%(prog)s version %(version)s')
-def cli():
-    pass
+@click.pass_context
+def cli(ctx):
+    if ctx.invoked_subcommand is None:
+        open_editor(source_path())
 
-def get_source_path():
-    notespath = "."
-    p = path.expanduser("~/.notes")
-    with open(p, 'r') as f:
-        notespath = json.load(f)["source"]
-    return notespath
+
+########################################
+# Initializer
+########################################
 
 @cli.command()
 @click.argument('source', 
     required=False, 
-    default=os.getcwd(), 
+    default=current_dir(), 
     type=click.Path(exists=True, file_okay=False, allow_dash=False)
     )
 def init(source):
     """Initializes ~/.notes with the location of your notes"""
-    s = path.expanduser(source)
-    p = path.expanduser("~/.notes")
-    config = {"source": s}
-    with open(p, 'w+') as f:
-        json.dump(config, f, indent=4)
+    init_config(source)
     click.echo("Initialized source of notes. Notes is now ready.")
+
+
+########################################
+# Quick folder actions
+########################################
+
+@cli.command()
+def projects():
+    open_editor(f"{source_path()}/projects")
+
+@cli.command()
+def areas():
+    open_editor(f"{source_path()}/areas")
+
+@cli.command()
+def resources():
+    open_editor(f"{source_path()}/resources")
+
+
+########################################
+# Templates
+########################################
+
+@cli.command()
+def journal():
+    open_editor(new_journal())
+
+
+########################################
+# Helper commands
+########################################
 
 @cli.command()
 def loc():
     """Location of the notes"""
-    click.echo(get_notes_path())
-
-def count_files(basepath):
-    c = {}
-    for entry in os.listdir(basepath):
-        if entry.startswith('.'):
-            continue
-        entrypath = path.join(basepath, entry)
-        if path.isdir(entrypath):
-            for key,value in count_files(entrypath).items():
-                c.setdefault(key, 0)
-                c[key] += value
-
-        elif path.isfile(entrypath):
-            filename, file_extension = os.path.splitext(entrypath)
-            c.setdefault(file_extension, 0)
-            c[file_extension] += 1
-    return c
+    click.echo(source_path())
 
 @cli.command()
 @click.option('--total', default=False, is_flag=True, flag_value=True, help='Show only total count')
 def count(total):
     """Count of all notes (skips dot files)"""
-    basepath = get_source_path()
-    counts = count_files(basepath)
+    counts = count_files(source_path())
+    
     total_count = 0
     for file_type, count in counts.items():
         if total == False:
@@ -67,10 +80,3 @@ def count(total):
         click.echo(total_count)
     else:
         click.echo(f"Total:\t\t{total_count}")
-    
-
-@cli.command()
-def o():
-    """open your notes in VSCode"""
-    basepath = get_source_path()
-    os.system(f"code {basepath}")
