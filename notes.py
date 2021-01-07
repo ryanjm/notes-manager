@@ -36,14 +36,17 @@ def init(source):
 
 @cli.command()
 def projects():
+    """Opens /projects"""
     open_editor(f"{source_path()}/projects")
 
 @cli.command()
 def areas():
+    """Opens /areas"""
     open_editor(f"{source_path()}/areas")
 
 @cli.command()
 def resources():
+    """Opens /resources"""
     open_editor(f"{source_path()}/resources")
 
 
@@ -53,6 +56,7 @@ def resources():
 
 @cli.command()
 def journal():
+    """Creates a new journal entry (`YYYY-MM-DD.md`) in `/journal`"""
     open_editor(new_journal())
 
 
@@ -70,7 +74,7 @@ def loc():
 def count(total):
     """Count of all notes (skips dot files)"""
     counts = count_files(source_path())
-    
+
     total_count = 0
     for file_type, count in counts.items():
         if total == False:
